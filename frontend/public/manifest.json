@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Scam Detector AI",
+  "version": "1.0.0",
+  "description": "AI-powered analysis to protect you from fraud, phishing, and digital threats.",
+  "action": {
+    "default_popup": "index.html",
+    "default_icon": "vite.svg"
+  },
+  "icons": {
+    "16": "vite.svg",
+    "48": "vite.svg",
+    "128": "vite.svg"
+  },
+  "host_permissions": [
+    "http://localhost:8000/*"
+  ],
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ]
+}
