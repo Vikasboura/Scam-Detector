@@ -15,7 +15,7 @@ genai.configure(api_key=api_key)
 class LLMClassifier:
     def __init__(self):
         # We will try a few models in order of preference/stability
-        self.output_model = 'models/gemini-2.5-flash'
+        self.output_model = 'models/gemini-1.5-flash'
         self.model = genai.GenerativeModel(self.output_model)
 
     def analyze(self, text, url=None, ml_score=None):
@@ -55,7 +55,7 @@ class LLMClassifier:
         Do not include explanations outside JSON.
         """
 
-        max_retries = 3
+        max_retries = 5
         for attempt in range(max_retries):
             try:
                 print(f"Attempting analysis with {self.output_model} (Attempt {attempt + 1}/{max_retries})...")
@@ -73,14 +73,21 @@ class LLMClassifier:
                 print(f"LLM Error (Attempt {attempt + 1}): {e}")
                 # If it's a rate limit (429), wait and retry
                 if "429" in str(e) or "Resource exhausted" in str(e):
-                    wait_time = 2 ** (attempt + 1) # 2, 4, 8 seconds
-                    print(f"Rate limited. Waiting {wait_time} seconds...")
+                    # Progressive backoff: 5s, 15s, 30s, 60s, 60s
+                    wait_times = [5, 15, 30, 60, 60]
+                    wait_time = wait_times[min(attempt, len(wait_times) - 1)]
+                    print(f"Rate limited. Waiting {wait_time} seconds before retrying...")
                     time.sleep(wait_time)
                 else:
-                    # If it's another error (like 404 model not found), maybe we should fail fast?
-                    # But for now, let's just wait a bit and retry (or break if it's fatal)
-                    # changing model dynamically is hard here without re-init.
-                    break
+                    # If it's another error (like 404 model not found or blocked content), 
+                    # we should probably just fail instead of retrying endlessly.
+                    # But if it's transient 500/503 we might want to retry.
+                    # For now, if not rate limit, we pause briefly and retry once or twice implies default path,
+                    # but let's stick to only aggressive retries for Rate Limits.
+                    if attempt < 1: # Retry once for generic errors
+                         time.sleep(2)
+                    else:
+                        break
 
         # Fallback if all retries fail
         return {
