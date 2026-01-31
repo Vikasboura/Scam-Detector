@@ -89,10 +89,3 @@ To use this as a browser extension:
 
 *   **Backend**: Ready for **Render** (includes `Procfile`).
 *   **Frontend**: Ready for **Vercel** code (includes `vercel.json`).
-
-## 🤝 Contributing
-
-Contributions are welcome! Please open an issue or submit a pull request.
-
----
-*Created by [Vikasboura](https://github.com/Vikasboura)*
