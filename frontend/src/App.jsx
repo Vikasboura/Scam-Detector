@@ -30,7 +30,8 @@ const App = () => {
       const url = tab.url;
 
       // Send to backend
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      // Send to backend
+      const apiUrl = 'https://scam-detector-1-9wqs.onrender.com';
       const response = await axios.post(`${apiUrl}/analyze`, {
         message: pageText.substring(0, 5000), // Limit text length
         url: url
