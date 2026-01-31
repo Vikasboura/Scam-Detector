@@ -1,5 +1,13 @@
 fastapi
 uvicorn
+python-multipart
+scikit-learn
+joblib
+google-generativeai
+python-dotenv
+twilio
+openai
+requests
 scikit-learn
 pandas
 requests

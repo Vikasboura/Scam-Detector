@@ -39,7 +39,8 @@ const App = () => {
       setResult(response.data);
     } catch (err) {
       console.error(err);
-      setError('Failed to analyze page. Ensure backend is running and you are on a valid webpage.');
+      const errorMessage = err.response?.data?.detail || err.message || 'Unknown error';
+      setError(`Failed to analyze page: ${errorMessage}. Ensure backend is running.`);
     } finally {
       setLoading(false);
     }

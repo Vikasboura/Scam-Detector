@@ -1,22 +1,28 @@
 import os
 import json
 import time
-import google.generativeai as genai
+from openai import OpenAI
 from dotenv import load_dotenv
 
 load_dotenv(override=True)
 
-api_key = os.getenv("GEMINI_API_KEY")
+api_key = os.getenv("OPENROUTER_API_KEY")
 if not api_key:
-    raise ValueError("GEMINI_API_KEY not found in environment variables")
+    # Fallback to old key name just in case, or raise error
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise ValueError("OPENROUTER_API_KEY (or GEMINI_API_KEY) not found in environment variables")
 
-genai.configure(api_key=api_key)
+# Initialize OpenRouter client
+client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=api_key,
+)
 
 class LLMClassifier:
     def __init__(self):
-        # We will try a few models in order of preference/stability
-        self.output_model = 'models/gemini-2.5-flash'
-        self.model = genai.GenerativeModel(self.output_model)
+        # Use OpenRouter model ID
+        self.output_model = 'google/gemini-2.0-flash-lite-001' 
 
     def analyze(self, text, url=None, ml_score=None):
         prompt = f"""
@@ -59,28 +65,38 @@ class LLMClassifier:
         for attempt in range(max_retries):
             try:
                 print(f"Attempting analysis with {self.output_model} (Attempt {attempt + 1}/{max_retries})...")
-                response = self.model.generate_content(prompt)
+                
+                completion = client.chat.completions.create(
+                    model=self.output_model,
+                    messages=[
+                        {"role": "user", "content": prompt}
+                    ]
+                )
+                
+                response_text = completion.choices[0].message.content
                 
                 # Check for valid response
-                if not response.text:
+                if not response_text:
                     raise ValueError("Empty response from LLM")
 
                 # Clean up the response to ensure it's valid JSON
-                content = response.text.replace('```json', '').replace('```', '').strip()
+                content = response_text.replace('```json', '').replace('```', '').strip()
                 return json.loads(content)
             
             except Exception as e:
+                with open("backend_errors.log", "a") as f:
+                    f.write(f"LLM Error (Attempt {attempt + 1}): {e}\n")
                 print(f"LLM Error (Attempt {attempt + 1}): {e}")
-                # If it's a rate limit (429), wait and retry
-                if "429" in str(e) or "Resource exhausted" in str(e):
-                    wait_time = 2 ** (attempt + 1) # 2, 4, 8 seconds
+                
+                # If it's a rate limit (429), wait and retry (OpenRouter might send 429 too)
+                if "429" in str(e):
+                    wait_time = 5 * (2 ** attempt) 
                     print(f"Rate limited. Waiting {wait_time} seconds...")
                     time.sleep(wait_time)
                 else:
-                    # If it's another error (like 404 model not found), maybe we should fail fast?
-                    # But for now, let's just wait a bit and retry (or break if it's fatal)
-                    # changing model dynamically is hard here without re-init.
-                    break
+                    # Retry on other errors too for robustness, but maybe shorter wait?
+                    time.sleep(2)
+                    continue
 
         # Fallback if all retries fail
         return {
@@ -88,5 +104,5 @@ class LLMClassifier:
             "risk_score": 0,
             "scam_type": "Analysis Failed",
             "red_flags": ["Could not verify with AI"],
-            "advice": "Proceed with caution. The AI system is temporarily unavailable due to high traffic or limits."
+            "advice": "Proceed with caution. The AI system is temporarily unavailable."
         }
