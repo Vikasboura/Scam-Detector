@@ -33,7 +33,7 @@ This project is a full-stack **AI-powered Scam Detector** that analyzes web page
 *   **Frontend**: React, Vite, Tailwind CSS
 *   **Backend**: Python, FastAPI
 *   **AI/ML**: Scikit-Learn (Random Forest), Google Gemini API
-*   **Deployment**: Render (Backend), Vercel (Frontend), Chrome Web Store (Extension)
+*   **Deployment**: Render (Backend), Chrome Web Store (Extension)
 
 ## 🛠️ Installation & Setup
 
